@@ -1,0 +1,19 @@
+##########################################################################
+#
+#                pgxc_dns
+#
+# Copyright (c) 2012, StormDB, Inc.
+#
+# This software is released under the PostgreSQL Licence
+#
+# Author: Jim Mlodgenski <jim@stormdb.com>
+#
+# IDENTIFICATION
+#                 pgxc_dns/pgxc_dns.control
+# 
+###########################################################################
+
+comment = 'Returns the zone information based on the relative usage of the coordinators for use in a Bind sdb implementation '
+default_version = '1.0'
+module_pathname = '$libdir/pgxc_dns'
+relocatable = true
