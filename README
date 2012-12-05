@@ -1,0 +1,140 @@
+pgxc_dns for Postgres-XC 1.0+
+==============================
+
+This Postgres-XC extension implements functions and views to returns the zone 
+information of a subdomain based on the relative usage of the coordinators 
+for use in a Bind sdb implementation. 
+
+The view when configured with SDB will allow automatic load balancing and high 
+availability across coordinators. 
+
+Building
+--------
+
+PATH=/usr/local/pgsql/bin/:$PATH make USE_PGXS=1 
+sudo PATH=/usr/local/pgsql/bin/:$PATH make USE_PGXS=1 install
+
+(assuming you have Postgres-XC 1.0 in /usr/local/pgsql).
+
+I've tested on CentOS 6.3 only, but other *nix's should also work.
+
+Configuration
+-------------
+
+To configure SDB, install in on each coordinator. On CentOS 6.3, the following
+command could be used.
+> yum install bind-sdb
+
+On each coordniator, the subdomain needs to be created and the database 
+connection established pointing the the view pgxc_dns_zone. 
+> vi /etc/named.conf
+
+zone "xc.stormdb.us" IN {
+        type master;
+        database "pgsql  postgres    pgxc_dns_zone     localhost postgres pass";
+};
+
+The main zone record of the parent zone needs to point to the coordinators
+for the NS records of the sub domain. For example:
+
+> vi /var/named/stormdb.us.zone
+
+$ORIGIN stormdb.us.
+$TTL            0
+@                 IN SOA           stormdb.us.  root.stormdb.us. (
+100     ; serial
+0      ; refresh
+0      ; retry
+0      ; expiry
+0 )    ; minimum
+@                   IN NS          ns1.stormdb.us.
+@                   IN A           127.0.0.1
+ns1                 IN A           127.0.0.1
+
+xc.stormdb.us.      IN      NS     c1.xc.stormdb.us.
+xc.stormdb.us.      IN      NS     c2.xc.stormdb.us.
+c1.xc.stormdb.us.   IN      A      192.168.122.15
+c2.xc.stormdb.us.   IN      A      192.168.122.16
+
+
+Usage
+-----
+
+The following parameters can be set in the postgresql.conf file:
+
+pgxc_dns.zone:    The domain or subdomain controlled by the name servers. This
+                  value should be the same on all coordinators in the cluster. 
+                  Default: NULL
+                  Example: xc.stormdb.us
+
+pgxc_dns.name     The A record that clients will use to connect to the cluster. 
+                  This value should be the same on all coordinators in the 
+                  cluster.
+                  Default: NULL
+                  Example: coord
+
+pgxc_dns.host     The host record that will be associated with the A record. 
+                  This should correspond to the IP address on the coordinator 
+                  so each coordinator should be configured with a unique value. 
+                  Default: NULL
+                  Example: 192.168.122.16
+
+pgxc_dns.zone_ttl The  time to live (ttl) value returned with all zone wide 
+                  records such as SOA and NS records. This value should be 
+                  the same on all coordinators in the cluster.
+                  Default: 0
+                  Example: 3600
+
+pgxc_dns.ttl      The  time to live (ttl) value returned with A records. This 
+                  value should be the same on all coordinators in the cluster
+                  and should be kept at 0 for best results.
+                  Default: 0
+                  Example: 0
+
+Example
+-------
+
+psql (PGXC 1.1devel, based on PG 9.2beta2)
+Type "help" for help.
+
+postgres=# select * from pgxc_dns_zone ;
+        name         | ttl | rdtype |                    rdata                     
+---------------------+-----+--------+----------------------------------------------
+ xc.stormdb.us       |   0 | SOA    | xc.stormdb.us. mail.xc.stormdb.us. 1 0 0 0 0
+ xc.stormdb.us       |   0 | NS     | c2.xc.stormdb.us
+ xc.stormdb.us       |   0 | NS     | c1.xc.stormdb.us
+ coord.xc.stormdb.us |   0 | A      | 192.168.122.16
+ c2.xc.stormdb.us    |   0 | A      | 192.168.122.16
+ c1.xc.stormdb.us    |   0 | A      | 192.168.122.15
+(6 rows)
+
+
+Author
+------
+
+Jim Mlodgenski <jim@stormdb.com>
+
+Copyright and License
+---------------------
+
+Copyright (c) StormDB, Inc.
+
+This module is free software; you can redistribute it and/or modify it under
+the [PostgreSQL License](http://www.opensource.org/licenses/postgresql).
+
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose, without fee, and without a written agreement is
+hereby granted, provided that the above copyright notice and this paragraph
+and the following two paragraphs appear in all copies.
+
+In no event shall StormDB, Inc. be liable to any party for direct,
+indirect, special, incidental, or consequential damages, including
+lost profits, arising out of the use of this software and its documentation,
+even if StormDB, Inc. has been advised of the possibility of such damage.
+
+StormDB, Inc. specifically disclaims any warranties,
+including, but not limited to, the implied warranties of merchantability and
+fitness for a particular purpose. The software provided hereunder is on an "as
+is" basis, and StormDB, Inc. has no obligations to provide maintenance,
+support, updates, enhancements, or modifications.
+
