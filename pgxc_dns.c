@@ -434,6 +434,9 @@ static HTAB *gather_weights() {
 
         estate->es_snapshot = GetActiveSnapshot();
 
+        PG_TRY();
+        {
+
         node = ExecInitRemoteQuery(step, estate, 0);
         MemoryContextSwitchTo(oldcontext);
 
@@ -476,6 +479,15 @@ static HTAB *gather_weights() {
                 result = ExecRemoteQuery(node);
         }
         ExecEndRemoteQuery(node);
+
+        }
+        PG_CATCH();
+        {
+                        ereport(WARNING,
+                                (errcode(ERRCODE_INSUFFICIENT_RESOURCES),
+                                 errmsg("Failed to connect to remote coordinators")));
+        }
+        PG_END_TRY();
 
         /* Add the local information to the hashtable */
         localkey.host_len = strlen(xcdns_host);
