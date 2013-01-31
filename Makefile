@@ -2,7 +2,7 @@
 #
 #                pgxc_dns
 #
-# Copyright (c) 2012, StormDB, Inc.
+# Copyright (c) 2012-2013, StormDB, Inc.
 #
 # This software is released under the PostgreSQL Licence
 #

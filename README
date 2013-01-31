@@ -23,7 +23,7 @@ Configuration
 
 To configure SDB, install in on each coordinator. On CentOS 6.3, the following
 command could be used.
-> yum install bind-sdb
+> yum install bind bind-sdb
 
 On each coordniator, the subdomain needs to be created and the database 
 connection established pointing the the view pgxc_dns_zone. 
@@ -113,6 +113,7 @@ Author
 ------
 
 Jim Mlodgenski <jim@stormdb.com>
+http://www.stormdb.com
 
 Copyright and License
 ---------------------
